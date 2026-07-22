@@ -168,7 +168,7 @@ function ToastStack({ toasts, onDismiss }) {
    Sidebar (now backed by real /api/sessions data)
 --------------------------------------------------------- */
 
-function ProfileSidebar({ loading, error, historyCount, avgScore, history, onRetry }) {
+function ProfileSidebar({ loading, error, historyCount, avgScore, history, onRetry, onSelectSession }) {
   return (
     <aside className="w-full lg:w-[300px] shrink-0 bg-[#12161F] border border-[#232939] rounded-2xl p-5 flex flex-col gap-6 h-fit lg:sticky lg:top-6">
       <div className="flex items-center gap-3">
@@ -245,9 +245,10 @@ function ProfileSidebar({ loading, error, historyCount, avgScore, history, onRet
         {!loading && !error && history.length > 0 && (
           <div className="flex flex-col gap-1.5">
             {history.map((h) => (
-              <div
+              <button
                 key={h.id}
-                className="group flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg hover:bg-[#171C27] border border-transparent hover:border-[#232939] transition-colors"
+                onClick={() => onSelectSession(h.id)}
+                className="group flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg hover:bg-[#171C27] border border-transparent hover:border-[#232939] transition-colors text-left w-full"
               >
                 <div className="min-w-0">
                   <p className="font-body text-[13px] text-[#C7CDD6] truncate group-hover:text-[#E9EDF4]">
@@ -261,7 +262,7 @@ function ProfileSidebar({ loading, error, historyCount, avgScore, history, onRet
                   </span>
                   <ChevronRight size={13} className="text-[#5C6470] group-hover:text-[#98A2B3]" />
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         )}
@@ -484,6 +485,132 @@ function EvaluationPanel({ visible, loading, result, onReset }) {
 }
 
 /* ---------------------------------------------------------
+   Past session detail modal
+--------------------------------------------------------- */
+
+// Feedback is stored as one flat array with "Strength: ..." / "Weakness: ..."
+// prefixes (see backend's evaluate route), so split it back apart for display.
+function splitFeedback(feedback) {
+  const strengths = [];
+  const weaknesses = [];
+  (feedback || []).forEach((line) => {
+    if (line.startsWith("Strength: ")) strengths.push(line.slice("Strength: ".length));
+    else if (line.startsWith("Weakness: ")) weaknesses.push(line.slice("Weakness: ".length));
+    else strengths.push(line); // unexpected format - show it rather than drop it
+  });
+  return { strengths, weaknesses };
+}
+
+function SessionDetailModal({ loading, error, session, onClose }) {
+  const { strengths, weaknesses } = session ? splitFeedback(session.feedback) : { strengths: [], weaknesses: [] };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[#12161F] border border-[#232939] rounded-2xl w-full max-w-xl max-h-[85vh] overflow-y-auto p-6 animate-rise"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <History size={16} className="text-[#8B85FF]" />
+            <h3 className="font-display font-semibold text-[#E9EDF4] text-[15px]">Past session</h3>
+          </div>
+          <button onClick={onClose} className="text-[#5C6470] hover:text-[#98A2B3]" aria-label="Close">
+            <X size={18} />
+          </button>
+        </div>
+
+        {loading && (
+          <div className="flex flex-col gap-5">
+            <SkeletonLine w="w-1/3" />
+            <SkeletonLine w="w-full" />
+            <SkeletonLine w="w-5/6" />
+            <div className="shimmer h-16 rounded-xl" />
+            <div className="grid grid-cols-2 gap-6">
+              <SkeletonLine w="w-full" />
+              <SkeletonLine w="w-full" />
+            </div>
+          </div>
+        )}
+
+        {!loading && error && <p className="font-body text-sm text-[#F0654B]">{error}</p>}
+
+        {!loading && !error && session && (
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center justify-between font-body text-xs text-[#5C6470]">
+              <span>{session.jobRole}</span>
+              <span className="font-mono">{formatDate(session.date)}</span>
+            </div>
+
+            <div>
+              <p className="font-body text-[10px] uppercase tracking-wider text-[#8B85FF] mb-1.5">Question</p>
+              <p className="font-display text-[#E9EDF4] text-base leading-snug">{session.question}</p>
+            </div>
+
+            <div>
+              <p className="font-body text-[10px] uppercase tracking-wider text-[#5C6470] mb-1.5">Your answer</p>
+              <div className="bg-[#0E1219] border border-[#232939] rounded-xl p-4 max-h-40 overflow-y-auto">
+                <p className="font-body text-[13px] text-[#C7CDD6] leading-relaxed">
+                  {session.userTranscript || "(no transcript recorded)"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div
+                className="w-14 h-14 rounded-full border-2 flex items-center justify-center shrink-0 font-mono font-bold text-lg"
+                style={{ borderColor: scoreColor(session.score), color: scoreColor(session.score) }}
+              >
+                {session.score.toFixed(1)}
+              </div>
+              <p className="font-body text-xs text-[#5C6470]">AI score out of 10</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <div className="flex items-center gap-1.5 mb-3">
+                  <CheckCircle2 size={14} className="text-[#35C88F]" />
+                  <p className="font-body text-xs font-semibold uppercase tracking-wider text-[#98A2B3]">
+                    Strengths
+                  </p>
+                </div>
+                <ul className="flex flex-col gap-2">
+                  {strengths.map((s, i) => (
+                    <li key={i} className="font-body text-[13px] text-[#C7CDD6] leading-snug flex gap-2">
+                      <span className="text-[#35C88F] mt-1">&bull;</span>
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5 mb-3">
+                  <AlertTriangle size={14} className="text-[#F2A93B]" />
+                  <p className="font-body text-xs font-semibold uppercase tracking-wider text-[#98A2B3]">
+                    Areas to improve
+                  </p>
+                </div>
+                <ul className="flex flex-col gap-2">
+                  {weaknesses.map((s, i) => (
+                    <li key={i} className="font-body text-[13px] text-[#C7CDD6] leading-snug flex gap-2">
+                      <span className="text-[#F2A93B] mt-1">&bull;</span>
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
    Main dashboard
 --------------------------------------------------------- */
 
@@ -502,6 +629,11 @@ export default function App() {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState(null);
   const [historyStats, setHistoryStats] = useState({ totalInterviews: 0, averageScore: 0, history: [] });
+
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [sessionDetail, setSessionDetail] = useState(null);
+  const [sessionDetailLoading, setSessionDetailLoading] = useState(false);
+  const [sessionDetailError, setSessionDetailError] = useState(null);
 
   const userIdRef = useRef(null);
   if (userIdRef.current === null) {
@@ -545,6 +677,32 @@ export default function App() {
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
+
+  const openSession = useCallback(async (id) => {
+    setSelectedSessionId(id);
+    setSessionDetail(null);
+    setSessionDetailError(null);
+    setSessionDetailLoading(true);
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/sessions/${id}?userId=${encodeURIComponent(userIdRef.current)}`
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Couldn't load that session.");
+      setSessionDetail(data);
+    } catch (err) {
+      setSessionDetailError(err.message || "Couldn't load that session.");
+    } finally {
+      setSessionDetailLoading(false);
+    }
+  }, []);
+
+  const closeSessionDetail = () => {
+    setSelectedSessionId(null);
+    setSessionDetail(null);
+    setSessionDetailError(null);
+  };
+
 
   const clearTimer = useCallback(() => {
     clearInterval(timerRef.current);
@@ -810,6 +968,7 @@ export default function App() {
             avgScore={historyStats.averageScore}
             history={historyStats.history}
             onRetry={fetchHistory}
+            onSelectSession={openSession}
           />
 
           <main className="flex-1 w-full min-w-0 flex flex-col">
@@ -908,6 +1067,15 @@ export default function App() {
           </main>
         </div>
       </div>
+
+      {selectedSessionId && (
+        <SessionDetailModal
+          loading={sessionDetailLoading}
+          error={sessionDetailError}
+          session={sessionDetail}
+          onClose={closeSessionDetail}
+        />
+      )}
     </div>
   );
 }
