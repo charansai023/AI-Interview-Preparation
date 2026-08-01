@@ -4,9 +4,51 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------
+   Theme tokens. Only structural/neutral colors (backgrounds,
+   borders, text) swap between dark and light - the brand accent
+   (indigo) and status colors (green/amber/red) stay constant in
+   both, since they already have enough contrast on white or near-
+   black and keeping them fixed avoids re-tuning every score badge.
+   Dark is the default (no class needed); adding "light" to <html>
+   switches to the light palette.
+--------------------------------------------------------- */
+:root {
+  --bg-void: #0b0e14;
+  --panel: #12161f;
+  --panel-raised: #171c27;
+  --panel-sunken: #0e1219;
+  --line: #232939;
+  --line-hover: #2e3547;
+  --text-hi: #e9edf4;
+  --text-body: #c7cdd6;
+  --text-mid: #98a2b3;
+  --text-dim: #5c6470;
+  --eval-gradient-from: #161b2a;
+  --shimmer-a: #171c27;
+  --shimmer-b: #202737;
+}
+
+html.light {
+  --bg-void: #f4f5f9;
+  --panel: #ffffff;
+  --panel-raised: #f1f2f7;
+  --panel-sunken: #eef0f5;
+  --line: #e2e5ec;
+  --line-hover: #c7ccda;
+  --text-hi: #1a1d24;
+  --text-body: #333846;
+  --text-mid: #5b6474;
+  --text-dim: #8991a3;
+  --eval-gradient-from: #f5f4ff;
+  --shimmer-a: #ecedf3;
+  --shimmer-b: #dddfe9;
+}
+
 body {
   margin: 0;
-  background-color: #0b0e14;
+  background-color: var(--bg-void);
+  transition: background-color 0.2s ease;
 }
 
 .font-display {
@@ -84,7 +126,8 @@ body {
   animation: toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .shimmer {
-  background: linear-gradient(90deg, #171c27 0%, #202737 40%, #171c27 80%);
+  background: linear-gradient(90deg, var(--shimmer-a) 0%, var(--shimmer-b) 40%, var(--shimmer-a) 80%);
   background-size: 800px 100%;
   animation: shimmer 1.6s ease-in-out infinite;
 }
+

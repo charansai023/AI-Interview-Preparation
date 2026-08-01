@@ -19,12 +19,14 @@ import {
   Loader2,
   SkipForward,
   Layers,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 /* ---------------------------------------------------------
    Design tokens: "Control Room" aesthetic
-   bg-void: #0B0E14   panel: #12161F   panel-raised: #171C27
-   line: #232939       accent-signal (indigo): #6C63FF
+   bg-void: var(--bg-void)   panel: var(--panel)   panel-raised: var(--panel-raised)
+   line: var(--line)       accent-signal (indigo): #6C63FF
    accent-warm (amber): #F2A93B     good: #35C88F     warn: #F0654B
 --------------------------------------------------------- */
 
@@ -116,6 +118,21 @@ function getOrCreateUserId() {
   }
 }
 
+function getInitialTheme() {
+  const KEY = "interviewPrepTheme";
+  try {
+    const saved = window.localStorage.getItem(KEY);
+    if (saved === "light" || saved === "dark") return saved;
+  } catch (e) {
+    // localStorage can throw in locked-down environments - fall through
+    // to the OS preference instead.
+  }
+  if (typeof window !== "undefined" && window.matchMedia) {
+    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  }
+  return "dark";
+}
+
 function formatDate(iso) {
   try {
     return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -143,19 +160,19 @@ function ToastStack({ toasts, onDismiss }) {
         return (
           <div
             key={t.id}
-            className="animate-toast bg-[#171C27] border rounded-xl shadow-lg p-3.5 flex items-start gap-2.5"
+            className="animate-toast bg-[var(--panel-raised)] border rounded-xl shadow-lg p-3.5 flex items-start gap-2.5"
             style={{ borderColor: cfg.border + "55" }}
           >
             <Icon size={16} style={{ color: cfg.iconColor }} className="shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               {t.title && (
-                <p className="font-body text-[12.5px] font-semibold text-[#E9EDF4] leading-snug">
+                <p className="font-body text-[12.5px] font-semibold text-[var(--text-hi)] leading-snug">
                   {t.title}
                 </p>
               )}
-              <p className="font-body text-[12px] text-[#98A2B3] leading-snug">{t.message}</p>
+              <p className="font-body text-[12px] text-[var(--text-mid)] leading-snug">{t.message}</p>
             </div>
-            <button onClick={() => onDismiss(t.id)} className="text-[#5C6470] hover:text-[#98A2B3] shrink-0">
+            <button onClick={() => onDismiss(t.id)} className="text-[var(--text-dim)] hover:text-[var(--text-mid)] shrink-0">
               <X size={14} />
             </button>
           </div>
@@ -171,33 +188,33 @@ function ToastStack({ toasts, onDismiss }) {
 
 function ProfileSidebar({ loading, error, historyCount, avgScore, history, onRetry, onSelectSession }) {
   return (
-    <aside className="w-full lg:w-[300px] shrink-0 bg-[#12161F] border border-[#232939] rounded-2xl p-5 flex flex-col gap-6 h-fit lg:sticky lg:top-6">
+    <aside className="w-full lg:w-[300px] shrink-0 bg-[var(--panel)] border border-[var(--line)] rounded-2xl p-5 flex flex-col gap-6 h-fit lg:sticky lg:top-6">
       <div className="flex items-center gap-3">
         <div className="w-11 h-11 rounded-xl bg-[#6C63FF]/15 border border-[#6C63FF]/30 flex items-center justify-center">
           <User size={20} className="text-[#8B85FF]" />
         </div>
         <div>
-          <p className="font-display font-semibold text-[#E9EDF4] text-sm leading-tight">Candidate</p>
-          <p className="font-body text-xs text-[#5C6470]">Session profile</p>
+          <p className="font-display font-semibold text-[var(--text-hi)] text-sm leading-tight">Candidate</p>
+          <p className="font-body text-xs text-[var(--text-dim)]">Session profile</p>
         </div>
       </div>
 
-      <div className="h-px bg-[#232939]" />
+      <div className="h-px bg-[var(--line)]" />
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-[#171C27] border border-[#232939] rounded-xl p-3.5">
-          <div className="flex items-center gap-1.5 text-[#5C6470] mb-2">
+        <div className="bg-[var(--panel-raised)] border border-[var(--line)] rounded-xl p-3.5">
+          <div className="flex items-center gap-1.5 text-[var(--text-dim)] mb-2">
             <History size={13} />
             <span className="font-body text-[10px] uppercase tracking-wider">Mock Interviews</span>
           </div>
           {loading ? (
             <div className="shimmer h-7 w-10 rounded" />
           ) : (
-            <p className="font-mono font-bold text-2xl text-[#E9EDF4]">{historyCount}</p>
+            <p className="font-mono font-bold text-2xl text-[var(--text-hi)]">{historyCount}</p>
           )}
         </div>
-        <div className="bg-[#171C27] border border-[#232939] rounded-xl p-3.5">
-          <div className="flex items-center gap-1.5 text-[#5C6470] mb-2">
+        <div className="bg-[var(--panel-raised)] border border-[var(--line)] rounded-xl p-3.5">
+          <div className="flex items-center gap-1.5 text-[var(--text-dim)] mb-2">
             <TrendingUp size={13} />
             <span className="font-body text-[10px] uppercase tracking-wider">Avg Score</span>
           </div>
@@ -206,16 +223,16 @@ function ProfileSidebar({ loading, error, historyCount, avgScore, history, onRet
           ) : (
             <p className="font-mono font-bold text-2xl" style={{ color: scoreColor(avgScore) }}>
               {avgScore.toFixed(1)}
-              <span className="text-xs text-[#5C6470] font-body font-normal">/10</span>
+              <span className="text-xs text-[var(--text-dim)] font-body font-normal">/10</span>
             </p>
           )}
         </div>
       </div>
 
-      <div className="h-px bg-[#232939]" />
+      <div className="h-px bg-[var(--line)]" />
 
       <div className="flex flex-col gap-2 min-h-0">
-        <p className="font-body text-[10px] uppercase tracking-wider text-[#5C6470] mb-1">Past sessions</p>
+        <p className="font-body text-[10px] uppercase tracking-wider text-[var(--text-dim)] mb-1">Past sessions</p>
 
         {loading && (
           <div className="flex flex-col gap-2">
@@ -230,7 +247,7 @@ function ProfileSidebar({ loading, error, historyCount, avgScore, history, onRet
             <p className="font-body text-xs text-[#F0654B]">{error}</p>
             <button
               onClick={onRetry}
-              className="font-body text-xs font-medium text-[#98A2B3] hover:text-[#E9EDF4] underline"
+              className="font-body text-xs font-medium text-[var(--text-mid)] hover:text-[var(--text-hi)] underline"
             >
               Retry
             </button>
@@ -238,7 +255,7 @@ function ProfileSidebar({ loading, error, historyCount, avgScore, history, onRet
         )}
 
         {!loading && !error && history.length === 0 && (
-          <p className="font-body text-xs text-[#5C6470] italic px-1">
+          <p className="font-body text-xs text-[var(--text-dim)] italic px-1">
             No sessions yet - finish an interview to see it here.
           </p>
         )}
@@ -249,13 +266,13 @@ function ProfileSidebar({ loading, error, historyCount, avgScore, history, onRet
               <button
                 key={h.id}
                 onClick={() => onSelectSession(h.id)}
-                className="group flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg hover:bg-[#171C27] border border-transparent hover:border-[#232939] transition-colors text-left w-full"
+                className="group flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg hover:bg-[var(--panel-raised)] border border-transparent hover:border-[var(--line)] transition-colors text-left w-full"
               >
                 <div className="min-w-0">
-                  <p className="font-body text-[13px] text-[#C7CDD6] truncate group-hover:text-[#E9EDF4]">
+                  <p className="font-body text-[13px] text-[var(--text-body)] truncate group-hover:text-[var(--text-hi)]">
                     {h.jobRole}
                   </p>
-                  <p className="font-mono text-[11px] text-[#5C6470]">
+                  <p className="font-mono text-[11px] text-[var(--text-dim)]">
                     {formatDate(h.date)} &middot; {h.totalQuestions} question{h.totalQuestions === 1 ? "" : "s"}
                   </p>
                 </div>
@@ -263,7 +280,7 @@ function ProfileSidebar({ loading, error, historyCount, avgScore, history, onRet
                   <span className="font-mono text-xs font-semibold" style={{ color: scoreColor(h.score) }}>
                     {h.score.toFixed(1)}
                   </span>
-                  <ChevronRight size={13} className="text-[#5C6470] group-hover:text-[#98A2B3]" />
+                  <ChevronRight size={13} className="text-[var(--text-dim)] group-hover:text-[var(--text-mid)]" />
                 </div>
               </button>
             ))}
@@ -290,7 +307,7 @@ function TimerRing({ secondsLeft }) {
   return (
     <div className="relative w-[104px] h-[104px] shrink-0">
       <svg width="104" height="104" viewBox="0 0 104 104" className="-rotate-90">
-        <circle cx="52" cy="52" r={radius} fill="none" stroke="#232939" strokeWidth="6" />
+        <circle cx="52" cy="52" r={radius} fill="none" stroke="var(--line)" strokeWidth="6" />
         <circle
           cx="52"
           cy="52"
@@ -305,7 +322,7 @@ function TimerRing({ secondsLeft }) {
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className={`font-mono font-semibold text-lg ${low ? "text-[#F0654B]" : "text-[#E9EDF4]"}`}>
+        <span className={`font-mono font-semibold text-lg ${low ? "text-[#F0654B]" : "text-[var(--text-hi)]"}`}>
           {mm}:{ss}
         </span>
       </div>
@@ -327,14 +344,14 @@ function LiveTranscript({ finalText, interimText, isRecording, supported }) {
   }, [finalText, interimText]);
 
   return (
-    <div ref={boxRef} className="bg-[#0E1219] border border-[#232939] rounded-xl p-4 h-[168px] overflow-y-auto">
+    <div ref={boxRef} className="bg-[var(--panel-sunken)] border border-[var(--line)] rounded-xl p-4 h-[168px] overflow-y-auto">
       <div className="flex items-center gap-2 mb-2.5">
-        <Radio size={13} className={isRecording ? "text-[#6C63FF]" : "text-[#5C6470]"} />
-        <p className="font-body text-[10px] uppercase tracking-wider text-[#5C6470]">Live transcript</p>
+        <Radio size={13} className={isRecording ? "text-[#6C63FF]" : "text-[var(--text-dim)]"} />
+        <p className="font-body text-[10px] uppercase tracking-wider text-[var(--text-dim)]">Live transcript</p>
         {isRecording && <span className="font-mono text-[10px] text-[#6C63FF] ml-auto">listening&hellip;</span>}
       </div>
       {finalText || interimText ? (
-        <p className="font-body text-[14px] leading-relaxed text-[#C7CDD6]">
+        <p className="font-body text-[14px] leading-relaxed text-[var(--text-body)]">
           {finalText}
           <span className="text-[#6C63FF]/70">{interimText}</span>
           {isRecording && (
@@ -345,7 +362,7 @@ function LiveTranscript({ finalText, interimText, isRecording, supported }) {
           )}
         </p>
       ) : (
-        <p className="font-body text-[13px] text-[#5C6470] italic">
+        <p className="font-body text-[13px] text-[var(--text-dim)] italic">
           {supported
             ? "Your words will appear here once you start recording\u2026"
             : "Speech recognition isn't supported in this browser, so live transcription is unavailable."}
@@ -370,14 +387,14 @@ function EvaluationPanel({ visible, loading, result, onReset, onFinish, question
         visible ? "max-h-[1100px] opacity-100 mt-6" : "max-h-0 opacity-0 mt-0"
       }`}
     >
-      <div className="bg-gradient-to-b from-[#161B2A] to-[#12161F] border border-[#2A2F6C]/50 rounded-2xl p-6 animate-rise">
+      <div className="bg-gradient-to-b from-[var(--eval-gradient-from)] to-[var(--panel)] border border-[#2A2F6C]/50 rounded-2xl p-6 animate-rise">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <Sparkles size={16} className="text-[#8B85FF]" />
-            <h3 className="font-display font-semibold text-[#E9EDF4] text-[15px]">AI Evaluation</h3>
+            <h3 className="font-display font-semibold text-[var(--text-hi)] text-[15px]">AI Evaluation</h3>
           </div>
           {!loading && questionsAnswered > 0 && (
-            <span className="font-mono text-[11px] text-[#5C6470]">
+            <span className="font-mono text-[11px] text-[var(--text-dim)]">
               question {questionsAnswered} of this session
             </span>
           )}
@@ -419,14 +436,14 @@ function EvaluationPanel({ visible, loading, result, onReset, onFinish, question
                   {result.score.toFixed(1)}
                 </div>
                 <div>
-                  <p className="font-display font-semibold text-[#E9EDF4] text-sm">
+                  <p className="font-display font-semibold text-[var(--text-hi)] text-sm">
                     {result.score >= 8
                       ? "Strong, well-structured answer"
                       : result.score >= 6.5
                       ? "Solid answer with room to grow"
                       : "Needs more structure and detail"}
                   </p>
-                  <p className="font-body text-xs text-[#5C6470]">Scored out of 10 by the AI interviewer</p>
+                  <p className="font-body text-xs text-[var(--text-dim)]">Scored out of 10 by the AI interviewer</p>
                 </div>
               </div>
 
@@ -434,13 +451,13 @@ function EvaluationPanel({ visible, loading, result, onReset, onFinish, question
                 <div>
                   <div className="flex items-center gap-1.5 mb-3">
                     <CheckCircle2 size={14} className="text-[#35C88F]" />
-                    <p className="font-body text-xs font-semibold uppercase tracking-wider text-[#98A2B3]">
+                    <p className="font-body text-xs font-semibold uppercase tracking-wider text-[var(--text-mid)]">
                       Strengths
                     </p>
                   </div>
                   <ul className="flex flex-col gap-2">
                     {result.strengths.map((s, i) => (
-                      <li key={i} className="font-body text-[13px] text-[#C7CDD6] leading-snug flex gap-2">
+                      <li key={i} className="font-body text-[13px] text-[var(--text-body)] leading-snug flex gap-2">
                         <span className="text-[#35C88F] mt-1">&bull;</span>
                         <span>{s}</span>
                       </li>
@@ -450,13 +467,13 @@ function EvaluationPanel({ visible, loading, result, onReset, onFinish, question
                 <div>
                   <div className="flex items-center gap-1.5 mb-3">
                     <AlertTriangle size={14} className="text-[#F2A93B]" />
-                    <p className="font-body text-xs font-semibold uppercase tracking-wider text-[#98A2B3]">
+                    <p className="font-body text-xs font-semibold uppercase tracking-wider text-[var(--text-mid)]">
                       Areas to improve
                     </p>
                   </div>
                   <ul className="flex flex-col gap-2">
                     {result.weaknesses.map((s, i) => (
-                      <li key={i} className="font-body text-[13px] text-[#C7CDD6] leading-snug flex gap-2">
+                      <li key={i} className="font-body text-[13px] text-[var(--text-body)] leading-snug flex gap-2">
                         <span className="text-[#F2A93B] mt-1">&bull;</span>
                         <span>{s}</span>
                       </li>
@@ -466,14 +483,14 @@ function EvaluationPanel({ visible, loading, result, onReset, onFinish, question
               </div>
 
               {result.idealAnswerSnippet && (
-                <div className="bg-[#0E1219] border border-[#232939] rounded-xl p-4">
+                <div className="bg-[var(--panel-sunken)] border border-[var(--line)] rounded-xl p-4">
                   <div className="flex items-center gap-1.5 mb-2">
                     <Lightbulb size={14} className="text-[#8B85FF]" />
-                    <p className="font-body text-xs font-semibold uppercase tracking-wider text-[#98A2B3]">
+                    <p className="font-body text-xs font-semibold uppercase tracking-wider text-[var(--text-mid)]">
                       How you could have framed it
                     </p>
                   </div>
-                  <p className="font-body text-[13px] text-[#C7CDD6] leading-relaxed italic">
+                  <p className="font-body text-[13px] text-[var(--text-body)] leading-relaxed italic">
                     &ldquo;{result.idealAnswerSnippet}&rdquo;
                   </p>
                 </div>
@@ -482,7 +499,7 @@ function EvaluationPanel({ visible, loading, result, onReset, onFinish, question
               <div className="flex items-center gap-3 flex-wrap">
                 <button
                   onClick={onReset}
-                  className="flex items-center gap-2 font-body text-xs font-medium text-[#98A2B3] hover:text-[#E9EDF4] border border-[#232939] hover:border-[#2E3547] rounded-lg px-3.5 py-2 transition-colors"
+                  className="flex items-center gap-2 font-body text-xs font-medium text-[var(--text-mid)] hover:text-[var(--text-hi)] border border-[var(--line)] hover:border-[var(--line-hover)] rounded-lg px-3.5 py-2 transition-colors"
                 >
                   <RotateCcw size={13} />
                   Next question
@@ -527,15 +544,15 @@ function SessionDetailModal({ loading, error, session, onClose }) {
       onClick={onClose}
     >
       <div
-        className="bg-[#12161F] border border-[#232939] rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 animate-rise"
+        className="bg-[var(--panel)] border border-[var(--line)] rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 animate-rise"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <History size={16} className="text-[#8B85FF]" />
-            <h3 className="font-display font-semibold text-[#E9EDF4] text-[15px]">Past session</h3>
+            <h3 className="font-display font-semibold text-[var(--text-hi)] text-[15px]">Past session</h3>
           </div>
-          <button onClick={onClose} className="text-[#5C6470] hover:text-[#98A2B3]" aria-label="Close">
+          <button onClick={onClose} className="text-[var(--text-dim)] hover:text-[var(--text-mid)]" aria-label="Close">
             <X size={18} />
           </button>
         </div>
@@ -569,27 +586,27 @@ function SessionDetailModal({ loading, error, session, onClose }) {
                   {session.overallPerformanceScore.toFixed(1)}
                 </div>
                 <div>
-                  <p className="font-display font-semibold text-[#E9EDF4] text-sm">{session.jobRole}</p>
-                  <p className="font-body text-xs text-[#5C6470]">
+                  <p className="font-display font-semibold text-[var(--text-hi)] text-sm">{session.jobRole}</p>
+                  <p className="font-body text-xs text-[var(--text-dim)]">
                     {session.questionsAndAnswers.length} question
                     {session.questionsAndAnswers.length === 1 ? "" : "s"} &middot; overall score
                   </p>
                 </div>
               </div>
-              <span className="font-mono text-xs text-[#5C6470]">{formatDate(session.date)}</span>
+              <span className="font-mono text-xs text-[var(--text-dim)]">{formatDate(session.date)}</span>
             </div>
 
             <div className="flex flex-col gap-5">
               {session.questionsAndAnswers.map((qa, index) => {
                 const { strengths, weaknesses } = splitFeedback(qa.feedback);
                 return (
-                  <div key={index} className="bg-[#0E1219] border border-[#232939] rounded-xl p-4 flex flex-col gap-4">
+                  <div key={index} className="bg-[var(--panel-sunken)] border border-[var(--line)] rounded-xl p-4 flex flex-col gap-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-body text-[10px] uppercase tracking-wider text-[#8B85FF] mb-1">
                           Question {index + 1}
                         </p>
-                        <p className="font-display text-[#E9EDF4] text-sm leading-snug">{qa.question}</p>
+                        <p className="font-display text-[var(--text-hi)] text-sm leading-snug">{qa.question}</p>
                       </div>
                       <span
                         className="font-mono text-xs font-semibold shrink-0 px-2 py-1 rounded-full border"
@@ -600,10 +617,10 @@ function SessionDetailModal({ loading, error, session, onClose }) {
                     </div>
 
                     <div>
-                      <p className="font-body text-[10px] uppercase tracking-wider text-[#5C6470] mb-1">
+                      <p className="font-body text-[10px] uppercase tracking-wider text-[var(--text-dim)] mb-1">
                         Your answer
                       </p>
-                      <p className="font-body text-[13px] text-[#C7CDD6] leading-relaxed">
+                      <p className="font-body text-[13px] text-[var(--text-body)] leading-relaxed">
                         {qa.userTranscript || "(no transcript recorded)"}
                       </p>
                     </div>
@@ -612,13 +629,13 @@ function SessionDetailModal({ loading, error, session, onClose }) {
                       <div>
                         <div className="flex items-center gap-1.5 mb-2">
                           <CheckCircle2 size={13} className="text-[#35C88F]" />
-                          <p className="font-body text-[11px] font-semibold uppercase tracking-wider text-[#98A2B3]">
+                          <p className="font-body text-[11px] font-semibold uppercase tracking-wider text-[var(--text-mid)]">
                             Strengths
                           </p>
                         </div>
                         <ul className="flex flex-col gap-1.5">
                           {strengths.map((s, i) => (
-                            <li key={i} className="font-body text-xs text-[#C7CDD6] leading-snug flex gap-2">
+                            <li key={i} className="font-body text-xs text-[var(--text-body)] leading-snug flex gap-2">
                               <span className="text-[#35C88F] mt-0.5">&bull;</span>
                               <span>{s}</span>
                             </li>
@@ -628,13 +645,13 @@ function SessionDetailModal({ loading, error, session, onClose }) {
                       <div>
                         <div className="flex items-center gap-1.5 mb-2">
                           <AlertTriangle size={13} className="text-[#F2A93B]" />
-                          <p className="font-body text-[11px] font-semibold uppercase tracking-wider text-[#98A2B3]">
+                          <p className="font-body text-[11px] font-semibold uppercase tracking-wider text-[var(--text-mid)]">
                             Areas to improve
                           </p>
                         </div>
                         <ul className="flex flex-col gap-1.5">
                           {weaknesses.map((s, i) => (
-                            <li key={i} className="font-body text-xs text-[#C7CDD6] leading-snug flex gap-2">
+                            <li key={i} className="font-body text-xs text-[var(--text-body)] leading-snug flex gap-2">
                               <span className="text-[#F2A93B] mt-0.5">&bull;</span>
                               <span>{s}</span>
                             </li>
@@ -668,6 +685,19 @@ export default function App() {
   const [evalResult, setEvalResult] = useState(null);
   const [jobRole, setJobRole] = useState(JOB_ROLES[0]);
   const [currentQuestion, setCurrentQuestion] = useState(() => pickRandomQuestion(JOB_ROLES[0]));
+  const [theme, setTheme] = useState(getInitialTheme);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("light", theme === "light");
+    try {
+      window.localStorage.setItem("interviewPrepTheme", theme);
+    } catch (e) {
+      // localStorage can throw in locked-down environments - the toggle
+      // still works for this session, it just won't persist.
+    }
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((prev) => (prev === "dark" ? "light" : "dark"));
 
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState(null);
@@ -1057,7 +1087,7 @@ export default function App() {
   const canFinishSession = !!sessionId && (phase === "idle" || phase === "submitted-done");
 
   return (
-    <div className="min-h-screen w-full bg-[#0B0E14] p-4 md:p-6">
+    <div className="min-h-screen w-full bg-[var(--bg-void)] p-4 md:p-6">
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
 
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
@@ -1067,13 +1097,13 @@ export default function App() {
               <Sparkles size={16} className="text-white" />
             </div>
             <div>
-              <h1 className="font-display font-semibold text-[#E9EDF4] text-base leading-none">Interview Prep</h1>
-              <p className="font-body text-[11px] text-[#5C6470] mt-0.5">AI mock interview dashboard</p>
+              <h1 className="font-display font-semibold text-[var(--text-hi)] text-base leading-none">Interview Prep</h1>
+              <p className="font-body text-[11px] text-[var(--text-dim)] mt-0.5">AI mock interview dashboard</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <label className="font-body text-[11px] text-[#5C6470]" htmlFor="jobRole">
+            <label className="font-body text-[11px] text-[var(--text-dim)]" htmlFor="jobRole">
               Role
             </label>
             <select
@@ -1081,7 +1111,7 @@ export default function App() {
               value={jobRole}
               onChange={(e) => handleRoleChange(e.target.value)}
               disabled={isRecording || isEvaluating || isStartingSession}
-              className="font-body text-xs bg-[#171C27] border border-[#232939] text-[#C7CDD6] rounded-lg px-2.5 py-1.5 disabled:opacity-50"
+              className="font-body text-xs bg-[var(--panel-raised)] border border-[var(--line)] text-[var(--text-body)] rounded-lg px-2.5 py-1.5 disabled:opacity-50"
             >
               {JOB_ROLES.map((r) => (
                 <option key={r} value={r}>
@@ -1089,16 +1119,25 @@ export default function App() {
                 </option>
               ))}
             </select>
+
+            <button
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--panel-raised)] border border-[var(--line)] text-[var(--text-mid)] hover:text-[var(--text-hi)] hover:border-[var(--line-hover)] transition-colors"
+            >
+              {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
           </div>
         </header>
 
         {sessionId && (
-          <div className="flex items-center justify-between flex-wrap gap-3 bg-[#12161F] border border-[#232939] rounded-xl px-4 py-3">
+          <div className="flex items-center justify-between flex-wrap gap-3 bg-[var(--panel)] border border-[var(--line)] rounded-xl px-4 py-3">
             <div className="flex items-center gap-2">
               <Layers size={14} className="text-[#8B85FF]" />
-              <p className="font-body text-xs text-[#98A2B3]">
+              <p className="font-body text-xs text-[var(--text-mid)]">
                 Practice session in progress -{" "}
-                <span className="font-mono text-[#C7CDD6]">
+                <span className="font-mono text-[var(--text-body)]">
                   {sessionScores.length} question{sessionScores.length === 1 ? "" : "s"} answered
                 </span>
                 {sessionScores.length > 0 && (
@@ -1115,7 +1154,7 @@ export default function App() {
             <button
               onClick={finishSession}
               disabled={!canFinishSession}
-              className="flex items-center gap-1.5 font-body text-xs font-medium text-[#98A2B3] hover:text-[#E9EDF4] border border-[#232939] hover:border-[#2E3547] rounded-lg px-3 py-1.5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 font-body text-xs font-medium text-[var(--text-mid)] hover:text-[var(--text-hi)] border border-[var(--line)] hover:border-[var(--line-hover)] rounded-lg px-3 py-1.5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               title={
                 sessionScores.length === 0
                   ? "Finish now without answering a question (nothing will be saved)"
@@ -1140,20 +1179,20 @@ export default function App() {
           />
 
           <main className="flex-1 w-full min-w-0 flex flex-col">
-            <div className="bg-[#12161F] border border-[#232939] rounded-2xl p-6">
+            <div className="bg-[var(--panel)] border border-[var(--line)] rounded-2xl p-6">
               <div className="mb-6 flex items-start justify-between gap-4">
                 <div>
                   <p className="font-body text-[10px] uppercase tracking-wider text-[#8B85FF] mb-2">
                     Current question
                   </p>
-                  <h2 className="font-display text-[#E9EDF4] text-lg md:text-xl leading-snug">
+                  <h2 className="font-display text-[var(--text-hi)] text-lg md:text-xl leading-snug">
                     {currentQuestion}
                   </h2>
                 </div>
                 <button
                   onClick={skipQuestion}
                   disabled={isRecording || isEvaluating || isStartingSession}
-                  className="shrink-0 flex items-center gap-1.5 font-body text-xs font-medium text-[#98A2B3] hover:text-[#E9EDF4] border border-[#232939] hover:border-[#2E3547] rounded-lg px-3 py-2 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="shrink-0 flex items-center gap-1.5 font-body text-xs font-medium text-[var(--text-mid)] hover:text-[var(--text-hi)] border border-[var(--line)] hover:border-[var(--line-hover)] rounded-lg px-3 py-2 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   title="Skip this question and get a new one"
                 >
                   <SkipForward size={13} />
@@ -1161,7 +1200,7 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 justify-center bg-[#0E1219] border border-[#232939] rounded-xl py-6 mb-5">
+              <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 justify-center bg-[var(--panel-sunken)] border border-[var(--line)] rounded-xl py-6 mb-5">
                 <TimerRing secondsLeft={secondsLeft} />
 
                 <div className="relative flex items-center justify-center w-24 h-24">
@@ -1202,7 +1241,7 @@ export default function App() {
                         ? "text-[#F0654B] border-[#F0654B]/40 bg-[#F0654B]/10"
                         : phase === "submitted-loading" || isStartingSession
                         ? "text-[#8B85FF] border-[#6C63FF]/40 bg-[#6C63FF]/10"
-                        : "text-[#5C6470] border-[#232939]"
+                        : "text-[var(--text-dim)] border-[var(--line)]"
                     }`}
                   >
                     {isRecording
@@ -1216,7 +1255,7 @@ export default function App() {
                   <button
                     onClick={handleStopAndSubmit}
                     disabled={!isRecording}
-                    className="flex items-center gap-1.5 font-body text-xs font-medium text-[#98A2B3] hover:text-[#E9EDF4] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-1.5 font-body text-xs font-medium text-[var(--text-mid)] hover:text-[var(--text-hi)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
                     <Send size={12} />
                     Submit answer
