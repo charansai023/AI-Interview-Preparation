@@ -18,6 +18,7 @@ import {
   Lightbulb,
   Loader2,
   SkipForward,
+  Layers,
 } from "lucide-react";
 
 /* ---------------------------------------------------------
@@ -254,7 +255,9 @@ function ProfileSidebar({ loading, error, historyCount, avgScore, history, onRet
                   <p className="font-body text-[13px] text-[#C7CDD6] truncate group-hover:text-[#E9EDF4]">
                     {h.jobRole}
                   </p>
-                  <p className="font-mono text-[11px] text-[#5C6470]">{formatDate(h.date)}</p>
+                  <p className="font-mono text-[11px] text-[#5C6470]">
+                    {formatDate(h.date)} &middot; {h.totalQuestions} question{h.totalQuestions === 1 ? "" : "s"}
+                  </p>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className="font-mono text-xs font-semibold" style={{ color: scoreColor(h.score) }}>
@@ -360,7 +363,7 @@ function SkeletonLine({ w }) {
   return <div className={`shimmer h-3 rounded ${w}`} />;
 }
 
-function EvaluationPanel({ visible, loading, result, onReset }) {
+function EvaluationPanel({ visible, loading, result, onReset, onFinish, questionsAnswered }) {
   return (
     <div
       className={`overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
@@ -368,9 +371,16 @@ function EvaluationPanel({ visible, loading, result, onReset }) {
       }`}
     >
       <div className="bg-gradient-to-b from-[#161B2A] to-[#12161F] border border-[#2A2F6C]/50 rounded-2xl p-6 animate-rise">
-        <div className="flex items-center gap-2 mb-5">
-          <Sparkles size={16} className="text-[#8B85FF]" />
-          <h3 className="font-display font-semibold text-[#E9EDF4] text-[15px]">AI Evaluation</h3>
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <Sparkles size={16} className="text-[#8B85FF]" />
+            <h3 className="font-display font-semibold text-[#E9EDF4] text-[15px]">AI Evaluation</h3>
+          </div>
+          {!loading && questionsAnswered > 0 && (
+            <span className="font-mono text-[11px] text-[#5C6470]">
+              question {questionsAnswered} of this session
+            </span>
+          )}
         </div>
 
         {loading ? (
@@ -469,13 +479,22 @@ function EvaluationPanel({ visible, loading, result, onReset }) {
                 </div>
               )}
 
-              <button
-                onClick={onReset}
-                className="self-start flex items-center gap-2 font-body text-xs font-medium text-[#98A2B3] hover:text-[#E9EDF4] border border-[#232939] hover:border-[#2E3547] rounded-lg px-3.5 py-2 transition-colors"
-              >
-                <RotateCcw size={13} />
-                Try another question
-              </button>
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  onClick={onReset}
+                  className="flex items-center gap-2 font-body text-xs font-medium text-[#98A2B3] hover:text-[#E9EDF4] border border-[#232939] hover:border-[#2E3547] rounded-lg px-3.5 py-2 transition-colors"
+                >
+                  <RotateCcw size={13} />
+                  Next question
+                </button>
+                <button
+                  onClick={onFinish}
+                  className="flex items-center gap-2 font-body text-xs font-medium text-[#8B85FF] hover:text-[#A9A3FF] border border-[#6C63FF]/40 hover:border-[#6C63FF]/70 bg-[#6C63FF]/10 rounded-lg px-3.5 py-2 transition-colors"
+                >
+                  <CheckCircle2 size={13} />
+                  Finish session &amp; save
+                </button>
+              </div>
             </div>
           )
         )}
@@ -502,15 +521,13 @@ function splitFeedback(feedback) {
 }
 
 function SessionDetailModal({ loading, error, session, onClose }) {
-  const { strengths, weaknesses } = session ? splitFeedback(session.feedback) : { strengths: [], weaknesses: [] };
-
   return (
     <div
       className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
-        className="bg-[#12161F] border border-[#232939] rounded-2xl w-full max-w-xl max-h-[85vh] overflow-y-auto p-6 animate-rise"
+        className="bg-[#12161F] border border-[#232939] rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 animate-rise"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
@@ -539,69 +556,95 @@ function SessionDetailModal({ loading, error, session, onClose }) {
         {!loading && error && <p className="font-body text-sm text-[#F0654B]">{error}</p>}
 
         {!loading && !error && session && (
-          <div className="flex flex-col gap-5">
-            <div className="flex items-center justify-between font-body text-xs text-[#5C6470]">
-              <span>{session.jobRole}</span>
-              <span className="font-mono">{formatDate(session.date)}</span>
-            </div>
-
-            <div>
-              <p className="font-body text-[10px] uppercase tracking-wider text-[#8B85FF] mb-1.5">Question</p>
-              <p className="font-display text-[#E9EDF4] text-base leading-snug">{session.question}</p>
-            </div>
-
-            <div>
-              <p className="font-body text-[10px] uppercase tracking-wider text-[#5C6470] mb-1.5">Your answer</p>
-              <div className="bg-[#0E1219] border border-[#232939] rounded-xl p-4 max-h-40 overflow-y-auto">
-                <p className="font-body text-[13px] text-[#C7CDD6] leading-relaxed">
-                  {session.userTranscript || "(no transcript recorded)"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div
-                className="w-14 h-14 rounded-full border-2 flex items-center justify-center shrink-0 font-mono font-bold text-lg"
-                style={{ borderColor: scoreColor(session.score), color: scoreColor(session.score) }}
-              >
-                {session.score.toFixed(1)}
-              </div>
-              <p className="font-body text-xs text-[#5C6470]">AI score out of 10</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <div className="flex items-center gap-1.5 mb-3">
-                  <CheckCircle2 size={14} className="text-[#35C88F]" />
-                  <p className="font-body text-xs font-semibold uppercase tracking-wider text-[#98A2B3]">
-                    Strengths
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-14 h-14 rounded-full border-2 flex items-center justify-center shrink-0 font-mono font-bold text-lg"
+                  style={{
+                    borderColor: scoreColor(session.overallPerformanceScore),
+                    color: scoreColor(session.overallPerformanceScore),
+                  }}
+                >
+                  {session.overallPerformanceScore.toFixed(1)}
+                </div>
+                <div>
+                  <p className="font-display font-semibold text-[#E9EDF4] text-sm">{session.jobRole}</p>
+                  <p className="font-body text-xs text-[#5C6470]">
+                    {session.questionsAndAnswers.length} question
+                    {session.questionsAndAnswers.length === 1 ? "" : "s"} &middot; overall score
                   </p>
                 </div>
-                <ul className="flex flex-col gap-2">
-                  {strengths.map((s, i) => (
-                    <li key={i} className="font-body text-[13px] text-[#C7CDD6] leading-snug flex gap-2">
-                      <span className="text-[#35C88F] mt-1">&bull;</span>
-                      <span>{s}</span>
-                    </li>
-                  ))}
-                </ul>
               </div>
-              <div>
-                <div className="flex items-center gap-1.5 mb-3">
-                  <AlertTriangle size={14} className="text-[#F2A93B]" />
-                  <p className="font-body text-xs font-semibold uppercase tracking-wider text-[#98A2B3]">
-                    Areas to improve
-                  </p>
-                </div>
-                <ul className="flex flex-col gap-2">
-                  {weaknesses.map((s, i) => (
-                    <li key={i} className="font-body text-[13px] text-[#C7CDD6] leading-snug flex gap-2">
-                      <span className="text-[#F2A93B] mt-1">&bull;</span>
-                      <span>{s}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <span className="font-mono text-xs text-[#5C6470]">{formatDate(session.date)}</span>
+            </div>
+
+            <div className="flex flex-col gap-5">
+              {session.questionsAndAnswers.map((qa, index) => {
+                const { strengths, weaknesses } = splitFeedback(qa.feedback);
+                return (
+                  <div key={index} className="bg-[#0E1219] border border-[#232939] rounded-xl p-4 flex flex-col gap-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-body text-[10px] uppercase tracking-wider text-[#8B85FF] mb-1">
+                          Question {index + 1}
+                        </p>
+                        <p className="font-display text-[#E9EDF4] text-sm leading-snug">{qa.question}</p>
+                      </div>
+                      <span
+                        className="font-mono text-xs font-semibold shrink-0 px-2 py-1 rounded-full border"
+                        style={{ color: scoreColor(qa.score), borderColor: scoreColor(qa.score) + "55" }}
+                      >
+                        {qa.score.toFixed(1)}
+                      </span>
+                    </div>
+
+                    <div>
+                      <p className="font-body text-[10px] uppercase tracking-wider text-[#5C6470] mb-1">
+                        Your answer
+                      </p>
+                      <p className="font-body text-[13px] text-[#C7CDD6] leading-relaxed">
+                        {qa.userTranscript || "(no transcript recorded)"}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <CheckCircle2 size={13} className="text-[#35C88F]" />
+                          <p className="font-body text-[11px] font-semibold uppercase tracking-wider text-[#98A2B3]">
+                            Strengths
+                          </p>
+                        </div>
+                        <ul className="flex flex-col gap-1.5">
+                          {strengths.map((s, i) => (
+                            <li key={i} className="font-body text-xs text-[#C7CDD6] leading-snug flex gap-2">
+                              <span className="text-[#35C88F] mt-0.5">&bull;</span>
+                              <span>{s}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <AlertTriangle size={13} className="text-[#F2A93B]" />
+                          <p className="font-body text-[11px] font-semibold uppercase tracking-wider text-[#98A2B3]">
+                            Areas to improve
+                          </p>
+                        </div>
+                        <ul className="flex flex-col gap-1.5">
+                          {weaknesses.map((s, i) => (
+                            <li key={i} className="font-body text-xs text-[#C7CDD6] leading-snug flex gap-2">
+                              <span className="text-[#F2A93B] mt-0.5">&bull;</span>
+                              <span>{s}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -634,6 +677,15 @@ export default function App() {
   const [sessionDetail, setSessionDetail] = useState(null);
   const [sessionDetailLoading, setSessionDetailLoading] = useState(false);
   const [sessionDetailError, setSessionDetailError] = useState(null);
+
+  // The *active, in-progress* grouped practice session (distinct from
+  // selectedSessionId/sessionDetail above, which is for viewing a past,
+  // already-finished one). sessionScores accumulates locally as the user
+  // answers more questions in this sitting, purely for the live progress
+  // display - the authoritative record lives in MongoDB.
+  const [sessionId, setSessionId] = useState(null);
+  const [sessionScores, setSessionScores] = useState([]);
+  const [isStartingSession, setIsStartingSession] = useState(false);
 
   const userIdRef = useRef(null);
   if (userIdRef.current === null) {
@@ -703,6 +755,64 @@ export default function App() {
     setSessionDetailError(null);
   };
 
+  // Lazily starts a grouped practice session the first time the user
+  // begins recording, and reuses the same sessionId for every question
+  // after that until they finish. Returns the sessionId, or null if it
+  // couldn't be started (a toast is shown in that case).
+  const ensureSession = useCallback(async () => {
+    if (sessionId) return sessionId;
+
+    setIsStartingSession(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/sessions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: userIdRef.current, jobRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Couldn't start a new session.");
+      setSessionId(data.sessionId);
+      setSessionScores([]);
+      return data.sessionId;
+    } catch (err) {
+      pushToast("error", err.message || "Couldn't start a new practice session.", "Session error");
+      return null;
+    } finally {
+      setIsStartingSession(false);
+    }
+  }, [sessionId, jobRole, pushToast]);
+
+  // Saves the current grouped session (marks it complete) and refreshes
+  // the sidebar history so it shows up there. If nothing was ever
+  // answered, the backend just deletes the empty session instead.
+  const finishSession = useCallback(async () => {
+    if (!sessionId) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}/finish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: userIdRef.current }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Couldn't finish the session.");
+
+      if (!data.deleted) {
+        pushToast(
+          "info",
+          `Saved with an overall score of ${data.overallPerformanceScore.toFixed(1)}/10 across ${data.totalQuestions} question(s).`,
+          "Session finished"
+        );
+      }
+      fetchHistory();
+    } catch (err) {
+      pushToast("error", err.message || "Couldn't finish the session.", "Session error");
+    } finally {
+      setSessionId(null);
+      setSessionScores([]);
+    }
+  }, [sessionId, fetchHistory, pushToast]);
+
 
   const clearTimer = useCallback(() => {
     clearInterval(timerRef.current);
@@ -739,6 +849,15 @@ export default function App() {
       return;
     }
 
+    if (!sessionId) {
+      // Shouldn't normally happen since startRecording always ensures a
+      // session first, but guard against it rather than sending a
+      // request the backend will reject.
+      setPhase("idle");
+      pushToast("error", "No active practice session. Please try recording again.", "Missing session");
+      return;
+    }
+
     setPhase("submitted-loading");
 
     try {
@@ -747,7 +866,7 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: userIdRef.current,
-          jobRole,
+          sessionId,
           questionAsked: currentQuestion,
           userTranscript: transcript,
         }),
@@ -760,8 +879,10 @@ export default function App() {
       }
 
       setEvalResult(data);
+      setSessionScores((prev) => [...prev, data.score]);
       setPhase("submitted-done");
-      fetchHistory();
+      // History isn't refreshed here - this grouped session only shows up
+      // in the sidebar once the user finishes it (see finishSession).
     } catch (err) {
       setPhase("idle");
       pushToast(
@@ -770,7 +891,7 @@ export default function App() {
         "Evaluation failed"
       );
     }
-  }, [jobRole, currentQuestion, fetchHistory, pushToast]);
+  }, [sessionId, currentQuestion, pushToast]);
 
   const handleStopAndSubmit = useCallback(() => {
     manualStopRef.current = true;
@@ -798,6 +919,9 @@ export default function App() {
       }
       return;
     }
+
+    const activeSessionId = await ensureSession();
+    if (!activeSessionId) return; // ensureSession already showed a toast
 
     manualStopRef.current = false;
     finalTranscriptRef.current = "";
@@ -895,7 +1019,7 @@ export default function App() {
   };
 
   const skipQuestion = () => {
-    if (isRecording || isEvaluating) return; // don't allow mid-answer or mid-evaluation
+    if (isRecording || isEvaluating || isStartingSession) return; // don't allow mid-answer or mid-evaluation
     manualStopRef.current = true;
     clearTimer();
     teardownRecognition();
@@ -907,8 +1031,13 @@ export default function App() {
     setCurrentQuestion((prev) => pickRandomQuestion(jobRole, prev));
   };
 
-  const handleRoleChange = (newRole) => {
-    if (isRecording || isEvaluating) return; // select is disabled in this state anyway, but guard regardless
+  const handleRoleChange = async (newRole) => {
+    if (isRecording || isEvaluating || isStartingSession) return; // select is disabled in this state anyway, but guard regardless
+    if (sessionId) {
+      // A grouped session only has one role, so switching roles mid-session
+      // saves and closes the current one rather than mixing roles in it.
+      await finishSession();
+    }
     manualStopRef.current = true;
     clearTimer();
     teardownRecognition();
@@ -923,6 +1052,9 @@ export default function App() {
 
   const isRecording = phase === "recording";
   const isEvaluating = phase === "submitted-loading" || phase === "submitted-done";
+  const sessionAvg =
+    sessionScores.length > 0 ? sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length : 0;
+  const canFinishSession = !!sessionId && (phase === "idle" || phase === "submitted-done");
 
   return (
     <div className="min-h-screen w-full bg-[#0B0E14] p-4 md:p-6">
@@ -948,7 +1080,7 @@ export default function App() {
               id="jobRole"
               value={jobRole}
               onChange={(e) => handleRoleChange(e.target.value)}
-              disabled={isRecording || isEvaluating}
+              disabled={isRecording || isEvaluating || isStartingSession}
               className="font-body text-xs bg-[#171C27] border border-[#232939] text-[#C7CDD6] rounded-lg px-2.5 py-1.5 disabled:opacity-50"
             >
               {JOB_ROLES.map((r) => (
@@ -959,6 +1091,42 @@ export default function App() {
             </select>
           </div>
         </header>
+
+        {sessionId && (
+          <div className="flex items-center justify-between flex-wrap gap-3 bg-[#12161F] border border-[#232939] rounded-xl px-4 py-3">
+            <div className="flex items-center gap-2">
+              <Layers size={14} className="text-[#8B85FF]" />
+              <p className="font-body text-xs text-[#98A2B3]">
+                Practice session in progress -{" "}
+                <span className="font-mono text-[#C7CDD6]">
+                  {sessionScores.length} question{sessionScores.length === 1 ? "" : "s"} answered
+                </span>
+                {sessionScores.length > 0 && (
+                  <>
+                    {" "}
+                    · running avg{" "}
+                    <span className="font-mono font-semibold" style={{ color: scoreColor(sessionAvg) }}>
+                      {sessionAvg.toFixed(1)}
+                    </span>
+                  </>
+                )}
+              </p>
+            </div>
+            <button
+              onClick={finishSession}
+              disabled={!canFinishSession}
+              className="flex items-center gap-1.5 font-body text-xs font-medium text-[#98A2B3] hover:text-[#E9EDF4] border border-[#232939] hover:border-[#2E3547] rounded-lg px-3 py-1.5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title={
+                sessionScores.length === 0
+                  ? "Finish now without answering a question (nothing will be saved)"
+                  : "Save this session and return to a fresh start"
+              }
+            >
+              <CheckCircle2 size={13} />
+              Finish session
+            </button>
+          </div>
+        )}
 
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           <ProfileSidebar
@@ -984,7 +1152,7 @@ export default function App() {
                 </div>
                 <button
                   onClick={skipQuestion}
-                  disabled={isRecording || isEvaluating}
+                  disabled={isRecording || isEvaluating || isStartingSession}
                   className="shrink-0 flex items-center gap-1.5 font-body text-xs font-medium text-[#98A2B3] hover:text-[#E9EDF4] border border-[#232939] hover:border-[#2E3547] rounded-lg px-3 py-2 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   title="Skip this question and get a new one"
                 >
@@ -1011,13 +1179,13 @@ export default function App() {
                   )}
                   <button
                     onClick={isRecording ? handleStopAndSubmit : startRecording}
-                    disabled={isEvaluating}
+                    disabled={isEvaluating || isStartingSession}
                     aria-label={isRecording ? "Stop recording" : "Start recording"}
                     className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg disabled:opacity-40 disabled:cursor-not-allowed ${
                       isRecording ? "bg-[#F0654B] hover:bg-[#e0553d]" : "bg-[#6C63FF] hover:bg-[#5b52ea]"
                     }`}
                   >
-                    {phase === "submitted-loading" ? (
+                    {phase === "submitted-loading" || isStartingSession ? (
                       <Loader2 size={24} className="text-white animate-spin" />
                     ) : isRecording ? (
                       <Square size={24} className="text-white fill-white" />
@@ -1032,12 +1200,18 @@ export default function App() {
                     className={`font-mono text-xs px-2.5 py-1 rounded-full border ${
                       isRecording
                         ? "text-[#F0654B] border-[#F0654B]/40 bg-[#F0654B]/10"
-                        : phase === "submitted-loading"
+                        : phase === "submitted-loading" || isStartingSession
                         ? "text-[#8B85FF] border-[#6C63FF]/40 bg-[#6C63FF]/10"
                         : "text-[#5C6470] border-[#232939]"
                     }`}
                   >
-                    {isRecording ? "\u25CF recording" : phase === "submitted-loading" ? "evaluating\u2026" : "ready"}
+                    {isRecording
+                      ? "\u25CF recording"
+                      : isStartingSession
+                      ? "starting session\u2026"
+                      : phase === "submitted-loading"
+                      ? "evaluating\u2026"
+                      : "ready"}
                   </span>
                   <button
                     onClick={handleStopAndSubmit}
@@ -1063,6 +1237,8 @@ export default function App() {
               loading={phase === "submitted-loading"}
               result={phase === "submitted-done" ? evalResult : null}
               onReset={reset}
+              onFinish={finishSession}
+              questionsAnswered={sessionScores.length}
             />
           </main>
         </div>

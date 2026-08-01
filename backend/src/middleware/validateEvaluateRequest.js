@@ -3,14 +3,18 @@ const MAX_TRANSCRIPT_LENGTH = 8000;
 /**
  * Validates and lightly sanitizes the body of POST /api/evaluate-answer.
  * Rejects early with a 400 rather than letting bad input reach Gemini.
+ *
+ * jobRole is intentionally NOT accepted here anymore - it's derived
+ * server-side from the session (see the evaluate route), so every
+ * question in a grouped session is guaranteed to use the same role.
  */
 function validateEvaluateRequest(req, res, next) {
-  const { jobRole, questionAsked, userTranscript, userId } = req.body || {};
+  const { sessionId, questionAsked, userTranscript, userId } = req.body || {};
 
   const errors = [];
 
-  if (typeof jobRole !== "string" || jobRole.trim().length === 0) {
-    errors.push("`jobRole` is required and must be a non-empty string.");
+  if (typeof sessionId !== "string" || sessionId.trim().length === 0) {
+    errors.push("`sessionId` is required and must be a non-empty string.");
   }
   if (typeof questionAsked !== "string" || questionAsked.trim().length === 0) {
     errors.push("`questionAsked` is required and must be a non-empty string.");
@@ -29,7 +33,7 @@ function validateEvaluateRequest(req, res, next) {
     // The dashboard doesn't have real auth yet, so fall back to a
     // placeholder id until a login/session system exists.
     userId: typeof userId === "string" && userId.trim() ? userId.trim() : "anonymous-user",
-    jobRole: jobRole.trim(),
+    sessionId: sessionId.trim(),
     questionAsked: questionAsked.trim(),
     userTranscript: userTranscript.trim(),
   };

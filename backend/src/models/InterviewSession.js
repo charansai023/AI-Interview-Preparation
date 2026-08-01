@@ -57,8 +57,18 @@ const interviewSessionSchema = new mongoose.Schema(
     overallPerformanceScore: {
       type: Number,
       required: true,
-      min: 1,
+      min: 0,
       max: 10,
+      default: 0,
+    },
+    // A session is created when the user starts their first question and
+    // stays open (completed: false) while they keep answering more
+    // questions in the same sitting. It's marked complete when they
+    // deliberately finish, so abandoned/in-progress sessions don't clutter
+    // history.
+    completed: {
+      type: Boolean,
+      default: false,
     },
   },
   {
