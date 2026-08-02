@@ -13,10 +13,10 @@ bash
 cd backend
 npm install
 cp .env.example .env
-# edit .env:
-#   GEMINI_API_KEY -> from https://aistudio.google.com/apikey
-#   MONGODB_URI    -> e.g. mongodb://127.0.0.1:27017/interview-prep
-#   CORS_ORIGIN    -> e.g. http://localhost:3000 (defaults to * if unset)
+ edit .env:
+GEMINI_API_KEY -> from https://aistudio.google.com/apikey
+MONGODB_URI    -> e.g. mongodb://127.0.0.1:27017/interview-prep
+CORS_ORIGIN    -> e.g. http://localhost:3000 (defaults to * if unset)
 npm start
 
 Runs on http://localhost:5000 by default. It refuses to boot if GEMINI_API_KEY or MONGODB_URI is missing, so you'll know right away if something's not configured.
@@ -45,7 +45,7 @@ Deploying it
 
 The frontend deploys cleanly to Vercel (root directory frontend, Vite preset, VITE_API_BASE_URL env var pointing at your backend) and the backend to Render (root directory backend, npm start, GEMINI_API_KEY + MONGODB_URI env vars, plus CORS_ORIGIN set to your Vercel URL once you have it). MongoDB Atlas works well as the hosted database in that setup.
 
-Where this is headed
+# Where this is headed
 
 The project works end-to-end today, and here's what would make it even better next:
 
